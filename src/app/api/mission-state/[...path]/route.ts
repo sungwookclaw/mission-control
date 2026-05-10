@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MISSION_STATE_API_URL =
-  process.env.MISSION_STATE_API_URL || "http://localhost:18829";
-const API_TOKEN = process.env.MISSION_STATE_API_TOKEN || process.env.OPENCLAW_API_TOKEN || "";
+  process.env.MISSION_STATE_API_URL || "http://150.109.244.22:18829";
+const API_TOKEN = process.env.MISSION_API_TOKEN || process.env.OPENCLAW_API_TOKEN || "";
 
 function apiHeaders(): HeadersInit {
   const h: HeadersInit = { "Content-Type": "application/json" };
