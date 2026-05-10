@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GATEWAY_URL =
-  process.env.OPENCLAW_GATEWAY_URL || "http://localhost:18828";
-const API_TOKEN = process.env.OPENCLAW_API_TOKEN || "";
+const MISSION_STATE_API_URL =
+  process.env.MISSION_STATE_API_URL || "http://localhost:18829";
+const API_TOKEN = process.env.MISSION_STATE_API_TOKEN || process.env.OPENCLAW_API_TOKEN || "";
 
-function gatewayHeaders(): HeadersInit {
+function apiHeaders(): HeadersInit {
   const h: HeadersInit = { "Content-Type": "application/json" };
   if (API_TOKEN) h["Authorization"] = `Bearer ${API_TOKEN}`;
   return h;
@@ -15,21 +15,22 @@ export async function GET(
   { params }: { params: { path: string[] } }
 ) {
   const filePath = params.path.join("/");
-  const url = `${GATEWAY_URL}/api/workspace/mission-state/${filePath}`;
+  const url = `${MISSION_STATE_API_URL}/api/state/${filePath}`;
 
   try {
-    const res = await fetch(url, { headers: gatewayHeaders() });
+    const res = await fetch(url, { headers: apiHeaders() });
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Gateway returned ${res.status}` },
+        { error: `API returned ${res.status}` },
         { status: res.status }
       );
     }
     const data = await res.json();
     return NextResponse.json(data);
   } catch (err) {
+    console.error(`[mission-state] GET ${filePath} failed:`, err);
     return NextResponse.json(
-      { error: `Gateway unreachable: ${String(err)}` },
+      { error: `API unreachable: ${String(err)}` },
       { status: 502 }
     );
   }
@@ -40,25 +41,26 @@ export async function PUT(
   { params }: { params: { path: string[] } }
 ) {
   const filePath = params.path.join("/");
-  const url = `${GATEWAY_URL}/api/workspace/mission-state/${filePath}`;
+  const url = `${MISSION_STATE_API_URL}/api/state/${filePath}`;
 
   try {
     const body = await request.json();
     const res = await fetch(url, {
       method: "PUT",
-      headers: gatewayHeaders(),
+      headers: apiHeaders(),
       body: JSON.stringify(body),
     });
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Gateway returned ${res.status}` },
+        { error: `API returned ${res.status}` },
         { status: res.status }
       );
     }
     return NextResponse.json({ ok: true });
   } catch (err) {
+    console.error(`[mission-state] PUT ${filePath} failed:`, err);
     return NextResponse.json(
-      { error: `Gateway unreachable: ${String(err)}` },
+      { error: `API unreachable: ${String(err)}` },
       { status: 502 }
     );
   }
