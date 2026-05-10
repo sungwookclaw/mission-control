@@ -116,7 +116,8 @@ function JobListPanel({
     <div className="space-y-1.5">
       {jobs.map(job => {
         const shortName = getJobShortName(job);
-        const lastOk = job.lastRun?.status === "ok";
+        const lastOk = !job.lastRun || job.lastRun?.status === "ok";
+        const isScheduled = !job.lastRun && job.nextRun;
         const selected = selectedJobId === job.id;
 
         return (
@@ -136,11 +137,11 @@ function JobListPanel({
               <span
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{
-                  background: lastOk ? "rgba(77,171,154,0.15)" : "rgba(224,108,117,0.15)",
-                  color: lastOk ? "var(--green)" : "var(--red)",
+                  background: isScheduled ? "rgba(122,139,255,0.15)" : lastOk ? "rgba(77,171,154,0.15)" : "rgba(224,108,117,0.15)",
+                  color: isScheduled ? "var(--accent)" : lastOk ? "var(--green)" : "var(--red)",
                 }}
               >
-                {lastOk ? "OK" : "ERROR"}
+                {isScheduled ? "예정" : lastOk ? "OK" : "ERROR"}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-tertiary)" }}>
