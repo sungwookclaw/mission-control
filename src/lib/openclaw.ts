@@ -37,11 +37,18 @@ export interface ProjectsData {
 
 export type NotesData = Note[];
 
-const API_BASE = "/api/mission-state";
+const API_BASE = "http://150.109.244.22:18829/api/state";
+const API_TOKEN = "cc7f80218efa3fbeaaea9e7d941b90a00ab5f2e3d5d72828";
+
+function authHeaders(): HeadersInit {
+  const h: HeadersInit = { "Content-Type": "application/json" };
+  if (API_TOKEN) h["Authorization"] = `Bearer ${API_TOKEN}`;
+  return h;
+}
 
 async function fetchJSON<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}/${path}`);
+    const res = await fetch(`${API_BASE}/${path}`, { headers: authHeaders() });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -68,7 +75,7 @@ export async function writeFile(
   try {
     const res = await fetch(`${API_BASE}/${path}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ content }),
     });
     return res.ok;
