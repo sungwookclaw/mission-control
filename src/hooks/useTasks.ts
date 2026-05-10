@@ -1,63 +1,90 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Task, TaskStatus, generateId } from "@/lib/tasks";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Task, TaskStatus, TasksData, generateId } from "@/lib/tasks";
+import {
+  fetchTasks,
+  writeTasks as apiWriteTasks,
+} from "@/lib/openclaw";
 
 const STORAGE_KEY = "mc-tasks";
+const POLL_MS = 10_000;
 
-function loadTasks(): Task[] {
+function loadLocalTasks(): TasksData {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : defaultTasks();
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return defaultTasks();
+    return [];
   }
 }
 
-function saveTasks(tasks: Task[]) {
+function saveLocal(tasks: TasksData) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }
 
-function defaultTasks(): Task[] {
-  return [
-    { id: generateId(), title: "API 스펙 정의", description: "REST API 엔드포인트 문서화", assignee: "성욱", status: "backlog", createdAt: new Date().toISOString() },
-    { id: generateId(), title: "인증 모듈 구현", description: "JWT 기반 인증 시스템", assignee: "키리", status: "in_progress", createdAt: new Date().toISOString() },
-    { id: generateId(), title: "대시보드 UI 리뷰", description: "Overview 컴포넌트 코드 리뷰", assignee: "트라스", status: "in_review", createdAt: new Date().toISOString() },
-    { id: generateId(), title: "프로젝트 초기 설정", description: "Next.js 프로젝트 세팅", assignee: "성욱", status: "done", createdAt: new Date().toISOString() },
-  ];
-}
-
 export function useTasks() {
-  const [tasks, setTasksInternal] = useState<Task[]>(loadTasks);
+  const [tasks, setTasksInternal] = useState<TasksData>(loadLocalTasks);
+  const mounted = useRef(true);
 
-  const setTasks = useCallback((updater: Task[] | ((prev: Task[]) => Task[])) => {
-    setTasksInternal((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      saveTasks(next);
-      return next;
-    });
+  // Fetch from server on mount + poll
+  useEffect(() => {
+    mounted.current = true;
+
+    const load = async () => {
+      const data = await fetchTasks();
+      if (!mounted.current) return;
+      if (data) {
+        setTasksInternal(data);
+        saveLocal(data);
+      }
+    };
+
+    load();
+    const interval = setInterval(load, POLL_MS);
+    return () => {
+      mounted.current = false;
+      clearInterval(interval);
+    };
   }, []);
 
-  const addTask = useCallback((title: string, description: string, assignee: string) => {
-    const task: Task = {
-      id: generateId(),
-      title,
-      description,
-      assignee,
-      status: "backlog",
-      createdAt: new Date().toISOString(),
-    };
-    setTasks((prev) => [...prev, task]);
-  }, [setTasks]);
+  const persist = useCallback(async (next: TasksData) => {
+    setTasksInternal(next);
+    saveLocal(next);
+    apiWriteTasks(next);
+  }, []);
 
-  const moveTask = useCallback((taskId: string, newStatus: TaskStatus) => {
-    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
-  }, [setTasks]);
+  const addTask = useCallback(
+    (title: string, description: string, assignee: string) => {
+      const task: Task = {
+        id: generateId(),
+        title,
+        description,
+        assignee,
+        status: "backlog",
+        createdAt: new Date().toISOString(),
+      };
+      persist([...tasks, task]);
+    },
+    [tasks, persist]
+  );
 
-  const deleteTask = useCallback((taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-  }, [setTasks]);
+  const moveTask = useCallback(
+    (taskId: string, newStatus: TaskStatus) => {
+      const next = tasks.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t));
+      persist(next);
+    },
+    [tasks, persist]
+  );
+
+  const deleteTask = useCallback(
+    (taskId: string) => {
+      const next = tasks.filter((t) => t.id !== taskId);
+      persist(next);
+    },
+    [tasks, persist]
+  );
 
   return { tasks, addTask, moveTask, deleteTask };
 }

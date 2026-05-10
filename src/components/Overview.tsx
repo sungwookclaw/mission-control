@@ -1,29 +1,16 @@
 "use client";
 
-const stats = [
-  { label: "진행 중", value: "3", color: "var(--accent)" },
-  { label: "완료", value: "12", color: "var(--green)" },
-  { label: "보류", value: "2", color: "var(--yellow)" },
-  { label: "도구", value: "5", color: "var(--orange)" },
-];
-
-const recentMissions = [
-  { id: "MC-1", title: "미션컨트롤 대시보드 구축", status: "진행 중", priority: "높음", date: "오늘" },
-  { id: "MC-2", title: "기억 전략 수립", status: "완료", priority: "중간", date: "오늘" },
-  { id: "MC-3", title: "GitHub/Vercel 연동", status: "완료", priority: "높음", date: "오늘" },
-];
-
-const recentActivity = [
-  { action: "미션컨트롤 레포지토리 생성", time: "2분 전", type: "system" },
-  { action: "기억 전략 논의 완료", time: "1시간 전", type: "memory" },
-  { action: "팀 에이전트 정리 완료", time: "오늘", type: "system" },
-];
+import { useOpenClaw } from "@/hooks/useOpenClaw";
+import { countByStatus } from "@/lib/openclaw";
 
 function StatusBadge({ status }: { status: string }) {
   const colorMap: Record<string, string> = {
+    active: "var(--accent)",
+    completed: "var(--green)",
+    "on-hold": "var(--yellow)",
     "진행 중": "var(--accent)",
-    "완료": "var(--green)",
-    "보류": "var(--yellow)",
+    완료: "var(--green)",
+    보류: "var(--yellow)",
   };
   const color = colorMap[status] || "var(--text-tertiary)";
   return (
@@ -36,21 +23,54 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ActivityDot({ type }: { type: string }) {
+function ActivityDot({ agent }: { agent: string }) {
   const colorMap: Record<string, string> = {
-    system: "var(--accent)",
-    memory: "var(--green)",
-    mission: "var(--orange)",
+    trass: "var(--accent)",
+    kiri: "var(--green)",
+    system: "var(--orange)",
   };
   return (
     <div
       className="w-2 h-2 rounded-full shrink-0"
-      style={{ background: colorMap[type] || "var(--text-tertiary)" }}
+      style={{ background: colorMap[agent] || "var(--text-tertiary)" }}
     />
   );
 }
 
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "방금";
+  if (mins < 60) return `${mins}분 전`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  const days = Math.floor(hours / 24);
+  return `${days}일 전`;
+}
+
 export function Overview() {
+  const { projects, tasks, notes, loading } = useOpenClaw();
+
+  if (loading && !projects && !tasks) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="text-sm" style={{ color: "var(--text-tertiary)" }}>로딩 중…</span>
+      </div>
+    );
+  }
+
+  const taskList = tasks || [];
+  const projectList = projects?.projects || [];
+  const activityList = projects?.activity || [];
+  const noteList = notes || [];
+
+  const stats = [
+    { label: "진행 중", value: String(countByStatus(taskList, "in_progress")), color: "var(--accent)" },
+    { label: "완료", value: String(countByStatus(taskList, "done")), color: "var(--green)" },
+    { label: "백로그", value: String(countByStatus(taskList, "backlog")), color: "var(--yellow)" },
+    { label: "프로젝트", value: String(projectList.length), color: "var(--orange)" },
+  ];
+
   return (
     <div className="space-y-8 max-w-5xl">
       {/* Header */}
@@ -83,7 +103,7 @@ export function Overview() {
 
       {/* Two column layout */}
       <div className="grid grid-cols-2 gap-6">
-        {/* Recent Missions */}
+        {/* Projects */}
         <div
           className="rounded-lg border overflow-hidden"
           style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
@@ -93,28 +113,33 @@ export function Overview() {
             style={{ borderColor: "var(--border)" }}
           >
             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-              최근 미션
+              프로젝트
             </span>
-            <button className="text-xs" style={{ color: "var(--accent)" }}>
-              전체 보기
-            </button>
+            <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+              {projectList.length}개
+            </span>
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {recentMissions.map((m) => (
+          <div>
+            {projectList.length === 0 && (
+              <div className="px-4 py-6 text-center text-xs" style={{ color: "var(--text-tertiary)" }}>
+                프로젝트 없음
+              </div>
+            )}
+            {projectList.map((p) => (
               <div
-                key={m.id}
+                key={p.id}
                 className="px-4 py-3 flex items-center justify-between border-b last:border-b-0"
                 style={{ borderColor: "var(--border)" }}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-mono" style={{ color: "var(--text-tertiary)" }}>
-                    {m.id}
+                    {p.id}
                   </span>
                   <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                    {m.title}
+                    {p.name}
                   </span>
                 </div>
-                <StatusBadge status={m.status} />
+                <StatusBadge status={p.status} />
               </div>
             ))}
           </div>
@@ -133,27 +158,83 @@ export function Overview() {
               활동
             </span>
           </div>
-          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
-            {recentActivity.map((a, i) => (
+          <div>
+            {activityList.length === 0 && (
+              <div className="px-4 py-6 text-center text-xs" style={{ color: "var(--text-tertiary)" }}>
+                활동 없음
+              </div>
+            )}
+            {activityList.map((a) => (
               <div
-                key={i}
+                key={a.id}
                 className="px-4 py-3 flex items-center gap-3 border-b last:border-b-0"
                 style={{ borderColor: "var(--border)" }}
               >
-                <ActivityDot type={a.type} />
-                <div className="flex-1">
-                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                <ActivityDot agent={a.agent} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm truncate block" style={{ color: "var(--text-primary)" }}>
                     {a.action}
                   </span>
+                  <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                    {a.agent}
+                  </span>
                 </div>
-                <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                  {a.time}
+                <span className="text-xs shrink-0" style={{ color: "var(--text-tertiary)" }}>
+                  {timeAgo(a.at)}
                 </span>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Notes */}
+      {noteList.length > 0 && (
+        <div
+          className="rounded-lg border overflow-hidden"
+          style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+        >
+          <div
+            className="px-4 py-3 border-b"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+              최근 노트
+            </span>
+          </div>
+          <div>
+            {noteList.map((n) => (
+              <div
+                key={n.id}
+                className="px-4 py-3 flex items-start gap-3 border-b last:border-b-0"
+                style={{ borderColor: "var(--border)" }}
+              >
+                <div className="flex-1">
+                  <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                    {n.content}
+                  </span>
+                  {n.tags && n.tags.length > 0 && (
+                    <div className="flex gap-1 mt-1.5">
+                      {n.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-[10px] px-1.5 py-0.5 rounded-full"
+                          style={{ background: "var(--bg-tertiary)", color: "var(--text-tertiary)" }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs shrink-0" style={{ color: "var(--text-tertiary)" }}>
+                  {timeAgo(n.at)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

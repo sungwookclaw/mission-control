@@ -1,3 +1,5 @@
+// Shared task types & helpers used by UI components
+
 export type TaskStatus = "backlog" | "in_progress" | "in_review" | "done";
 
 export interface Task {
@@ -6,8 +8,12 @@ export interface Task {
   description: string;
   assignee: string;
   status: TaskStatus;
+  priority?: "high" | "medium" | "low";
+  projectId?: string | null;
   createdAt: string;
 }
+
+export type TasksData = Task[];
 
 export const COLUMNS: { key: TaskStatus; label: string; color: string }[] = [
   { key: "backlog", label: "Backlog", color: "var(--text-tertiary)" },
