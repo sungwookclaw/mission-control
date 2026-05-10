@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MISSION_STATE_API_URL =
-  process.env.MISSION_STATE_API_URL || "http://150.109.244.22:18829";
-const API_TOKEN = process.env.MISSION_API_TOKEN || process.env.OPENCLAW_API_TOKEN || "";
+export const dynamic = "force-dynamic";
+
+const MISSION_STATE_API_URL = "http://150.109.244.22:18829";
+const API_TOKEN = "cc7f80218efa3fbeaaea9e7d941b90a00ab5f2e3d5d72828";
 
 function apiHeaders(): HeadersInit {
   const h: HeadersInit = { "Content-Type": "application/json" };
@@ -18,7 +19,7 @@ export async function GET(
   const url = `${MISSION_STATE_API_URL}/api/state/${filePath}`;
 
   try {
-    const res = await fetch(url, { headers: apiHeaders() });
+    const res = await fetch(url, { headers: apiHeaders(), cache: "no-store" });
     if (!res.ok) {
       return NextResponse.json(
         { error: `API returned ${res.status}` },
@@ -49,6 +50,7 @@ export async function PUT(
       method: "PUT",
       headers: apiHeaders(),
       body: JSON.stringify(body),
+      cache: "no-store",
     });
     if (!res.ok) {
       return NextResponse.json(
