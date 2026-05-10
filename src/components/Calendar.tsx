@@ -308,7 +308,7 @@ export function Calendar() {
   const monthLabel = `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월`;
 
   return (
-    <div className="flex-1 flex gap-0 overflow-hidden" style={{ height: "calc(100vh - 3.5rem)" }}>
+    <div className="flex-1 flex flex-col md:flex-row gap-0 overflow-hidden" style={{ height: "calc(100vh - 3.5rem)" }}>
       {/* Left: Calendar + Job List */}
       <div className="flex-1 flex flex-col border-r overflow-auto" style={{ borderColor: "var(--border)" }}>
         {/* Calendar Header */}
@@ -383,7 +383,7 @@ export function Calendar() {
       </div>
 
       {/* Right: Job Detail */}
-      <div className="w-96 flex flex-col overflow-hidden">
+      <div className="w-full md:w-96 flex flex-col overflow-hidden">
         {selectedJob ? (
           <>
             <div className="p-4 border-b" style={{ borderColor: "var(--border)" }}>

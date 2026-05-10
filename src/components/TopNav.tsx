@@ -7,9 +7,19 @@ export function TopNav() {
 
   return (
     <header
-      className="h-14 border-b flex items-center px-6 gap-4 shrink-0"
+      className="h-14 border-b flex items-center px-4 md:px-6 gap-3 md:gap-4 shrink-0"
       style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}
     >
+      {/* Mobile Logo */}
+      <div className="md:hidden flex items-center gap-2">
+        <div
+          className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
+          style={{ background: "var(--accent)", color: "#fff" }}
+        >
+          MC
+        </div>
+      </div>
+
       {/* Search */}
       <div
         className="flex items-center gap-2 px-3 py-1.5 rounded-md flex-1 max-w-md"
@@ -24,11 +34,11 @@ export function TopNav() {
           placeholder="검색..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="bg-transparent border-none outline-none text-sm flex-1"
+          className="bg-transparent border-none outline-none text-sm flex-1 min-w-0"
           style={{ color: "var(--text-primary)" }}
         />
         <kbd
-          className="text-xs px-1.5 py-0.5 rounded"
+          className="hidden md:inline text-xs px-1.5 py-0.5 rounded"
           style={{ background: "var(--bg-primary)", color: "var(--text-tertiary)" }}
         >
           ⌘K

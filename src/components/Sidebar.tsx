@@ -9,6 +9,9 @@ const navItems = [
   { id: "missions", label: "미션", href: "/board" },
   { id: "calendar", label: "캘린더", href: "/calendar" },
   { id: "projects", label: "프로젝트", href: "/projects" },
+];
+
+const moreItems = [
   { id: "tools", label: "도구", href: "#" },
   { id: "memory", label: "기억", href: "#" },
   { id: "settings", label: "설정", href: "#" },
@@ -70,73 +73,97 @@ export function Sidebar() {
   const pathname = usePathname();
   const [hovered, setHovered] = useState<string | null>(null);
 
-  const getActive = (item: typeof navItems[number]) => {
+  const getActive = (item: { href: string }) => {
     if (item.href === "/") return pathname === "/";
     return pathname.startsWith(item.href);
   };
 
   return (
-    <aside
-      className="w-56 border-r flex flex-col shrink-0"
-      style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}
-    >
-      {/* Logo */}
-      <div
-        className="h-14 flex items-center px-4 border-b"
-        style={{ borderColor: "var(--border)" }}
+    <>
+      {/* Desktop Sidebar */}
+      <aside
+        className="hidden md:flex w-56 border-r flex-col shrink-0"
+        style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}
       >
-        <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
-            style={{ background: "var(--accent)", color: "#fff" }}
-          >
-            MC
+        {/* Logo */}
+        <div
+          className="h-14 flex items-center px-4 border-b"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <div className="flex items-center gap-2">
+            <div
+              className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold"
+              style={{ background: "var(--accent)", color: "#fff" }}
+            >
+              MC
+            </div>
+            <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              미션컨트롤
+            </span>
           </div>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-            미션컨트롤
-          </span>
         </div>
-      </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5">
+        {/* Nav */}
+        <nav className="flex-1 py-3 px-2 space-y-0.5">
+          {[...navItems, ...moreItems].map((item) => {
+            const active = getActive(item);
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors"
+                style={{
+                  color: active || hovered === item.id ? "var(--text-primary)" : "var(--text-secondary)",
+                  background: active ? "var(--bg-tertiary)" : "transparent",
+                }}
+                onMouseEnter={() => setHovered(item.id)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                <span style={{ color: active ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+                  {icons[item.id]}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom */}
+        <div className="p-3 border-t" style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-2 px-2">
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
+              style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
+            >
+              SW
+            </div>
+            <div className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+              성욱
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t h-14"
+        style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}
+      >
         {navItems.map((item) => {
           const active = getActive(item);
           return (
             <Link
               key={item.id}
               href={item.href}
-              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors"
-              style={{
-                color: active || hovered === item.id ? "var(--text-primary)" : "var(--text-secondary)",
-                background: active ? "var(--bg-tertiary)" : "transparent",
-              }}
-              onMouseEnter={() => setHovered(item.id)}
-              onMouseLeave={() => setHovered(null)}
+              className="flex flex-col items-center justify-center gap-0.5 flex-1 py-1"
+              style={{ color: active ? "var(--text-primary)" : "var(--text-tertiary)" }}
             >
-              <span style={{ color: active ? "var(--text-primary)" : "var(--text-tertiary)" }}>
-                {icons[item.id]}
-              </span>
-              {item.label}
+              {icons[item.id]}
+              <span className="text-[10px]">{item.label}</span>
             </Link>
           );
         })}
       </nav>
-
-      {/* Bottom */}
-      <div className="p-3 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 px-2">
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center text-xs"
-            style={{ background: "var(--bg-tertiary)", color: "var(--text-secondary)" }}
-          >
-            SW
-          </div>
-          <div className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-            성욱
-          </div>
-        </div>
-      </div>
-    </aside>
+    </>
   );
 }
