@@ -7,6 +7,8 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { id: "overview", label: "개요", href: "/" },
   { id: "missions", label: "미션", href: "/board" },
+  { id: "calendar", label: "캘린더", href: "/calendar" },
+  { id: "projects", label: "프로젝트", href: "/projects" },
   { id: "tools", label: "도구", href: "#" },
   { id: "memory", label: "기억", href: "#" },
   { id: "settings", label: "설정", href: "#" },
@@ -39,6 +41,20 @@ const icons: Record<string, React.ReactNode> = {
   memory: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M2 4l6-2 6 2v8l-6 2-6-2V4z" />
+      <path d="M8 2v12" />
+    </svg>
+  ),
+  calendar: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="3" width="12" height="11" rx="1" />
+      <path d="M2 7h12" />
+      <path d="M5 1v3M11 1v3" />
+    </svg>
+  ),
+  projects: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M2 4l6-2 6 2" />
+      <path d="M2 4v8l6 2 6-2V4" />
       <path d="M8 2v12" />
     </svg>
   ),
