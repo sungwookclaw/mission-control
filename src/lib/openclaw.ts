@@ -1,4 +1,4 @@
-// OpenClaw Gateway API client
+// OpenClaw Gateway API client — proxied through Next.js API Routes
 
 import type { TaskStatus, TasksData } from "@/lib/tasks";
 
@@ -37,19 +37,11 @@ export interface ProjectsData {
 
 export type NotesData = Note[];
 
-const GATEWAY_URL = process.env.NEXT_PUBLIC_OPENCLAW_URL || "http://150.109.244.22:18828";
-const API_TOKEN = process.env.NEXT_PUBLIC_OPENCLAW_TOKEN || "";
-const STATE_BASE = "mission-state";
-
-function headers(): HeadersInit {
-  const h: HeadersInit = { "Content-Type": "application/json" };
-  if (API_TOKEN) h["Authorization"] = `Bearer ${API_TOKEN}`;
-  return h;
-}
+const API_BASE = "/api/mission-state";
 
 async function fetchJSON<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${GATEWAY_URL}/${path}`, { headers: headers() });
+    const res = await fetch(`${API_BASE}/${path}`);
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -58,22 +50,25 @@ async function fetchJSON<T>(path: string): Promise<T | null> {
 }
 
 export async function fetchProjects(): Promise<ProjectsData | null> {
-  return fetchJSON<ProjectsData>(`api/workspace/${STATE_BASE}/projects.json`);
+  return fetchJSON<ProjectsData>("projects.json");
 }
 
 export async function fetchTasks(): Promise<TasksData | null> {
-  return fetchJSON<TasksData>(`api/workspace/${STATE_BASE}/tasks.json`);
+  return fetchJSON<TasksData>("tasks.json");
 }
 
 export async function fetchNotes(): Promise<NotesData | null> {
-  return fetchJSON<NotesData>(`api/workspace/${STATE_BASE}/notes.json`);
+  return fetchJSON<NotesData>("notes.json");
 }
 
-export async function writeFile(path: string, content: string): Promise<boolean> {
+export async function writeFile(
+  path: string,
+  content: string
+): Promise<boolean> {
   try {
-    const res = await fetch(`${GATEWAY_URL}/api/workspace/${path}`, {
+    const res = await fetch(`${API_BASE}/${path}`, {
       method: "PUT",
-      headers: headers(),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content }),
     });
     return res.ok;
@@ -83,7 +78,7 @@ export async function writeFile(path: string, content: string): Promise<boolean>
 }
 
 export async function writeTasks(tasks: TasksData): Promise<boolean> {
-  return writeFile(`${STATE_BASE}/tasks.json`, JSON.stringify(tasks, null, 2));
+  return writeFile("tasks.json", JSON.stringify(tasks, null, 2));
 }
 
 export function countByStatus(tasks: TasksData, status: TaskStatus): number {
