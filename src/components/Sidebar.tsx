@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navItems = [
-  { id: "overview", label: "개요" },
-  { id: "missions", label: "미션" },
-  { id: "tools", label: "도구" },
-  { id: "memory", label: "기억" },
-  { id: "settings", label: "설정" },
+  { id: "overview", label: "개요", href: "/" },
+  { id: "missions", label: "미션", href: "/board" },
+  { id: "tools", label: "도구", href: "#" },
+  { id: "memory", label: "기억", href: "#" },
+  { id: "settings", label: "설정", href: "#" },
 ];
 
 const icons: Record<string, React.ReactNode> = {
@@ -49,7 +51,13 @@ const icons: Record<string, React.ReactNode> = {
 };
 
 export function Sidebar() {
-  const [active, setActive] = useState("overview");
+  const pathname = usePathname();
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const getActive = (item: typeof navItems[number]) => {
+    if (item.href === "/") return pathname === "/";
+    return pathname.startsWith(item.href);
+  };
 
   return (
     <aside
@@ -76,22 +84,27 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setActive(item.id)}
-            className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors cursor-pointer"
-            style={{
-              color: active === item.id ? "var(--text-primary)" : "var(--text-secondary)",
-              background: active === item.id ? "var(--bg-tertiary)" : "transparent",
-            }}
-          >
-            <span style={{ color: active === item.id ? "var(--text-primary)" : "var(--text-tertiary)" }}>
-              {icons[item.id]}
-            </span>
-            {item.label}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const active = getActive(item);
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm transition-colors"
+              style={{
+                color: active || hovered === item.id ? "var(--text-primary)" : "var(--text-secondary)",
+                background: active ? "var(--bg-tertiary)" : "transparent",
+              }}
+              onMouseEnter={() => setHovered(item.id)}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <span style={{ color: active ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+                {icons[item.id]}
+              </span>
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Bottom */}
