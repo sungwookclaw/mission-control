@@ -1,4 +1,4 @@
-// OpenClaw Gateway API client — proxied through Next.js API Routes
+// OpenClaw Mission State API client — proxied through Next.js API Routes
 
 import type { TaskStatus, TasksData } from "@/lib/tasks";
 
@@ -37,21 +37,15 @@ export interface ProjectsData {
 
 export type NotesData = Note[];
 
-const API_BASE = "http://150.109.244.22:18829/api/state";
-const API_TOKEN = "cc7f80218efa3fbeaaea9e7d941b90a00ab5f2e3d5d72828";
-
-function authHeaders(): HeadersInit {
-  const h: HeadersInit = { "Content-Type": "application/json" };
-  if (API_TOKEN) h["Authorization"] = `Bearer ${API_TOKEN}`;
-  return h;
-}
+const API_BASE = "/api/mission-state";
 
 async function fetchJSON<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_BASE}/${path}`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/${path}`);
     if (!res.ok) return null;
     return (await res.json()) as T;
-  } catch {
+  } catch (err) {
+    console.error("[fetchJSON]", path, err);
     return null;
   }
 }
@@ -75,11 +69,12 @@ export async function writeFile(
   try {
     const res = await fetch(`${API_BASE}/${path}`, {
       method: "PUT",
-      headers: authHeaders(),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content }),
     });
     return res.ok;
-  } catch {
+  } catch (err) {
+    console.error("[writeFile]", path, err);
     return false;
   }
 }
