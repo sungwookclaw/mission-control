@@ -44,7 +44,14 @@ function CalendarGrid({
         if (!day) return <div key={i} />;
         const inMonth = isCurrentMonth(day);
         const today_flag = isToday(day);
-        const dayJobs = inMonth ? jobs.filter(j => getDayRunsForJob(j, day).length > 0) : [];
+        const dayJobs = inMonth ? jobs.filter(j => {
+          if (getDayRunsForJob(j, day).length > 0) return true;
+          if (j.nextRun) {
+            const nextDate = new Date(j.nextRun);
+            return nextDate.toDateString() === day.toDateString();
+          }
+          return false;
+        }) : [];
         const selected = selectedDate && day.toDateString() === selectedDate.toDateString();
 
         return (
@@ -68,12 +75,13 @@ function CalendarGrid({
               <div className="flex justify-center gap-0.5 mt-0.5">
                 {dayJobs.slice(0, 4).map(j => {
                   const runs = getDayRunsForJob(j, day);
+                  const isScheduled = runs.length === 0 && j.nextRun && new Date(j.nextRun).toDateString() === day.toDateString();
                   const err = runs.some(r => r.status === "error");
                   return (
                     <div
                       key={j.id}
                       className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: err ? "var(--red)" : "var(--green)" }}
+                      style={{ background: isScheduled ? "var(--accent)" : err ? "var(--red)" : "var(--green)" }}
                     />
                   );
                 })}
@@ -90,11 +98,20 @@ function JobListPanel({
   jobs,
   selectedJobId,
   onSelectJob,
+  emptyMessage,
 }: {
   jobs: CronJob[];
   selectedJobId: string | null;
   onSelectJob: (id: string) => void;
+  emptyMessage?: string;
 }) {
+  if (jobs.length === 0 && emptyMessage) {
+    return (
+      <div className="flex items-center justify-center py-12 text-sm" style={{ color: "var(--text-tertiary)" }}>
+        {emptyMessage}
+      </div>
+    );
+  }
   return (
     <div className="space-y-1.5">
       {jobs.map(job => {
@@ -234,6 +251,18 @@ export function Calendar() {
     return data.jobs.sort((a, b) => (b.lastRun?.time || 0) - (a.lastRun?.time || 0));
   }, [data]);
 
+  const filteredJobs = useMemo(() => {
+    if (!selectedDate) return jobs;
+    return jobs.filter(j => {
+      if (getDayRunsForJob(j, selectedDate).length > 0) return true;
+      if (j.nextRun) {
+        const nextDate = new Date(j.nextRun);
+        return nextDate.toDateString() === selectedDate.toDateString();
+      }
+      return false;
+    });
+  }, [jobs, selectedDate]);
+
   const selectedJob = useMemo(() => {
     if (!selectedJobId || !data) return null;
     return data.jobs.find(j => j.id === selectedJobId) || null;
@@ -247,6 +276,16 @@ export function Calendar() {
   const nextMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     setSelectedDate(null);
+  };
+
+  const goToday = () => {
+    const now = new Date();
+    setCurrentDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDate(now);
+  };
+
+  const handleSelectDate = (d: Date) => {
+    setSelectedDate(prev => (prev && prev.toDateString() === d.toDateString() ? null : d));
   };
 
   if (loading) {
@@ -286,6 +325,9 @@ export function Calendar() {
             <button onClick={nextMonth} className="p-1 rounded hover:opacity-80" style={{ color: "var(--text-secondary)" }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 4l4 4-4 4" /></svg>
             </button>
+            <button onClick={goToday} className="px-2 py-1 rounded text-xs font-medium" style={{ color: "var(--accent)", background: "rgba(100,149,237,0.1)" }}>
+              오늘
+            </button>
           </div>
         </div>
 
@@ -296,7 +338,7 @@ export function Calendar() {
             month={currentDate.getMonth()}
             jobs={jobs}
             selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
+            onSelectDate={handleSelectDate}
           />
         </div>
 
@@ -308,6 +350,9 @@ export function Calendar() {
           <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
             <div className="w-2 h-2 rounded-full" style={{ background: "var(--red)" }} /> 에러
           </div>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-tertiary)" }}>
+            <div className="w-2 h-2 rounded-full" style={{ background: "var(--accent)" }} /> 예정
+          </div>
           <div className="ml-auto text-xs" style={{ color: "var(--text-tertiary)" }}>
             10초 자동 리프레시
           </div>
@@ -316,13 +361,23 @@ export function Calendar() {
         {/* Job List */}
         <div className="flex-1 overflow-auto p-4 border-t" style={{ borderColor: "var(--border)" }}>
           <h3 className="text-sm font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
-            크론잡 목록 ({jobs.length})
+            {selectedDate
+              ? `${selectedDate.toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} 작업 (${filteredJobs.length})`
+              : `크론잡 목록 (${jobs.length})`
+            }
           </h3>
-          <JobListPanel
-            jobs={jobs}
-            selectedJobId={selectedJobId}
-            onSelectJob={setSelectedJobId}
-          />
+          {jobs.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-sm" style={{ color: "var(--text-tertiary)" }}>
+              예정된 작업이 없습니다. 키리에게 작업을 예약해보세요!
+            </div>
+          ) : (
+            <JobListPanel
+              jobs={filteredJobs}
+              selectedJobId={selectedJobId}
+              onSelectJob={setSelectedJobId}
+              emptyMessage="해당 날짜에 실행된 작업이 없습니다"
+            />
+          )}
         </div>
       </div>
 
